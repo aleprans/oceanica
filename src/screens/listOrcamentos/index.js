@@ -28,6 +28,8 @@ export default () => {
       const unsubscribe = navigation.addListener('focus', async ()=> {
         setDados([])
         await SelectDados()
+        setDadosGerais([])
+        await selectDadosGerais()
       })
       return unsubscribe
   },[navigation])
@@ -37,28 +39,45 @@ export default () => {
     gerarPDF(dadosGerais, dadosPDF, qtdes)
   },[createPDF])
 
+  async function selectDadosGerais(){
+    let selectDGeral = await ExecuteQuery('SELECT * FROM dadosGerais')
+    setDadosGerais(selectDGeral.rows.item(0))
+  }
+
+  function convertPadrao(valor) {
+    
+    if(valor.length <= 6) {
+        return `${valor.substring(0,valor.length -3)},${valor.substring(valor.length -2)}`
+    }else {
+        return `${valor.substring(0,valor.length -6)}.${valor.substring(valor.length -6,valor.length -3)},${valor.substring(valor.length -2)}`
+    }
+}
+
   async function gerarPDF(dadosGerais, dadosPDF, qtdes){
-  
-    var totalServ = 0
+
+    let totalServ = 0
     var totalMat = 0
     let servicos = []
     let materiais = []
 
-    for(var i = 0; i < qtdes[0].totalServicos; i++){
+    for(let i = 0; i < qtdes[0].totalServicos; i++){
       totalServ = totalServ += dadosPDF[i].vlTotalServ
+      var totServ = convertPadrao(String(totalServ.toFixed(2)))
+      
+      const valorServTot = convertPadrao(String(dadosPDF[i].vlTotalServ))
+      const valorServ = convertPadrao(String(dadosPDF[i].vlServico))
+      servicos.push([dadosPDF[i].descServico, valorServ, dadosPDF[i].qtdeServico, valorServTot])
     }
  
-    for(var x = 0; x < qtdes[0].totalMateriais; x++){
-      totalMat = totalMat += dadosPDF[x].vlTotalMat
-    }
+    for(let i = 0; i < qtdes[0].totalMateriais + qtdes[0].totalServicos; i += qtdes[0].totalServicos){
+      totalMat = totalMat += dadosPDF[i].vlTotalMat
+      var totMat = convertPadrao(String(totalMat.toFixed(2)))
       
-      for(let i = 0; i < qtdes[0].totalServicos; i++){
-        servicos.push([dadosPDF[i].descServico, dadosPDF[i].vlServico, dadosPDF[i].qtdeServico, dadosPDF  [i].vlTotalServ.toFixed(2).replace('.',',')])
-      }
-        
-      for(let i = 0; i < qtdes[0].totalMateriais; i++){
-        materiais.push([dadosPDF[i].marcaMat, dadosPDF[i].material, dadosPDF[i].modeloMat, dadosPDF[i].vlTotalMat.toFixed(2).replace('.',','), dadosPDF[i].qtdeMaterial, dadosPDF[i].vlMaterial])
-      }
+      const valorMatTot = convertPadrao(String((dadosPDF[i].vlTotalMat.toFixed(2))))
+      const valorMat = convertPadrao(String(dadosPDF[i].vlMaterial))
+      materiais.push([dadosPDF[i].marcaMat, dadosPDF[i].material, dadosPDF[i].modeloMat, valorMatTot, dadosPDF[i].qtdeMaterial, valorMat, dadosPDF[i].prazoMat])
+    }
+
     const html = `
     <html>
       <head>
@@ -156,7 +175,7 @@ export default () => {
            <hr class="single"/>
            <hr class="single"/>
            <div>
-             <p class="info"><span class="negrito">Cliente: ${dadosPDF[0].nomeCliente} </span>Humberto</p>
+             <p class="info"><span class="negrito">Cliente: ${dadosPDF[0].nomeCliente} </span></p>
              <p class="info"><span class="negrito">Equipamento / Embarcação: ${dadosPDF[0].embarcacao} - ${dadosPDF[0].embModelo}</span></p>
              <p class="info"><span class="negrito">Responsável: ${dadosPDF[0].responsavel}</span></p>
            </div>
@@ -193,7 +212,7 @@ export default () => {
                    <td></td>
                    <td></td>
                    <td class="totais">TOTAL:</td>
-                   <td class="totais">R$ ${(totalServ).toFixed(2)}</td>
+                   <td class="totais">R$ ${totServ}</td>
                  </tr>
                </tfoot>
              </table>
@@ -220,7 +239,7 @@ export default () => {
                  <td class="item" style="width: 50px">${lines[4]}</td>
                  <td class="item" style="width: 100px">${lines[5]}</td>
                  <td class="item" style="width: 100px">${lines[3]}</td>
-                 <td class="item" style="width: 100px"></td>
+                 <td class="item" style="width: 100px">${lines[6]}</td>
                </tr>
                `,)
                .join('')
@@ -233,11 +252,11 @@ export default () => {
                        <td></td>
                        <td></td>
                        <td class="totais">TOTAL:</td>
-                       <td class="totais">R$ ${(totalMat).toFixed(2)}</td>
+                       <td class="totais">R$ ${totMat}</td>
                    </tr>
                </tfoot>
              </table>
-             <p class="totais" style="text-align: start; background-color: #ddd; font-size: 15px">VALOR TOTAL DOS SERVIÇOS E MATERIAIS:<span style="margin-left: 282px; margin-right: 10px; margin-top: 25px; margin-bottom: 25px">R$ ${(totalServ + totalMat).toFixed(2)}</span></p>
+             <p class="totais" style="text-align: start; background-color: #ddd; font-size: 15px">VALOR TOTAL DOS SERVIÇOS E MATERIAIS:<span style="margin-left: 282px; margin-right: 10px; margin-top: 25px; margin-bottom: 25px">R$ ${convertPadrao(String(totalServ + totalMat))}</span></p>
            </div>
            <hr class="single"/>
            <div>
@@ -368,8 +387,6 @@ export default () => {
       temp.push(selectQuery.rows.item(i))
     }
     setDadosPDF([...temp])
-    let selectDGeral = await ExecuteQuery('SELECT * FROM dadosGerais')
-    setDadosGerais(selectDGeral.rows.item(0))
 
     let selectQtdes = await ExecuteQuery('SELECT  COUNT(DISTINCT su.id) totalServicos, COUNT(DISTINCT mu.id) totalMateriais FROM orcamentos oc INNER JOIN ServUtilizados su ON su.idOrcamento = oc.id INNER JOIN matUtilizados mu ON mu.idOrcamento = oc.id WHERE oc.id = ?',[id])
     let qtdes = []
@@ -395,8 +412,11 @@ export default () => {
   }
 
   async function deleteItem(data){
-    const result = await ExecuteQuery('DELETE FROM orcamentos WHERE id = ?',[data.id])
-    if (result.rowsAffected > 0){
+
+    const result_or = await ExecuteQuery('DELETE FROM orcamentos WHERE id = ?',[data.id])
+    const result_mat = await ExecuteQuery('DELETE FROM matUtilizados WHERE idOrcamento = ?',[data.id])
+    const result_serv = await ExecuteQuery('DELETE FROM ServUtilizados WHERE idOrcamento = ?;',[data.id])
+    if (result_or.rowsAffected > 0){
         ToastAndroid.show('Orçamento excluido com sucesso!', ToastAndroid.LONG)
     }else {
         ToastAndroid.show('Erro ao Excluir Orçamento!', ToastAndroid.LONG)
@@ -432,7 +452,7 @@ export default () => {
                     style={estilo.btnModal}
                     onPress={()=>{
                       deleteItem(selectItem)
-                      navigation.goBack()
+                      // navigation.goBack()
                     }}
                   >
                     <Text style={estilo.textBtn}>OK</Text>

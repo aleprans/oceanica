@@ -94,7 +94,7 @@ export default () => {
             <Text style={estilos.label}>Contato</Text>
             <TextInput
                 style={estilos.input}
-                placeholder="ex: Marcos"
+                placeholder="ex: (12) 99187-9191 Marcos"
                 value={contato}
                 onChangeText={setContato}
             />

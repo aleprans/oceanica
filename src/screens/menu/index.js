@@ -100,6 +100,8 @@ export default () => {
         +" embarcacao INTEGER,"
         +" data TEXT,"
         +" prazoEntrega TEXT,"
+        +" vlMatTot REAL,"
+        +" vlServTot REAL,"
         +" vlTotal REAL)")
     }
 

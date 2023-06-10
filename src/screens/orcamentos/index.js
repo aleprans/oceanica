@@ -40,10 +40,13 @@ export default () => {
     const [insertServico, setInsertServico] = useState(false)
     const [qtMaterial, setQtMaterial] = useState()
     const [vlMaterial, setVlMaterial] = useState()
+    const [vlMatTot, setVlMatTot] = useState()
     const [servico, setServico] = useState('')
     const [qtServico, setQtServico] = useState('')
     const [vlServico, setVlServico] = useState('')
-    const [vlTotal, setVlTotal] = useState('')
+    const [vlServTot, setVlServTot] = useState('')
+    const [vlTotal, setVlTotal] = useState()
+    const [vlTotalBR, setVlTotalBR] = useState()
     const [prazoEntMat, setPrazoEntMat] = useState('')
     const [prazoEntrega, setPrazoEntrega] = useState('')
     const [idServ, setIdServ] = useState(1)
@@ -94,20 +97,6 @@ export default () => {
         setListAllMateriais([...temp])
     }
     
-    function Limpar(){
-        setNOrcamento('')
-        setCliente('')
-        setEmbarcacao('')
-        setQtMaterial('')
-        setVlMaterial('')
-        setServico('')
-        setQtServico('')
-        setVlServico('')
-        setVlTotal('')
-        setPrazoEntMat('')
-        setPrazoEntrega('')
-    }
-
     function limparModais() {
         setQtMaterial('')
         setQtServico('')
@@ -123,24 +112,36 @@ export default () => {
     }
 
     function calcTotal() {
+
         let totMat = 0
         let totServ = 0
+        var totGeral = 0
+
         for(let i = 0; i < listUtilmaterial.length; i++) {
-            totMat += +listUtilmaterial[i].qtde * +listUtilmaterial[i].valor.replace(',','.')
+            totMat += listUtilmaterial[i].qtde * listUtilmaterial[i].valor.replace('.','').replace(',','.')
         }
+        setVlMatTot(totMat.toFixed(2))
+        
         for(let x = 0; x < listUtilServico.length; x++) {
-            totServ += +listUtilServico[x].qtde * +listUtilServico[x].valor.replace(',','.')
+            totServ += listUtilServico[x].qtde * listUtilServico[x].valor.replace('.','').replace(',','.')
         }
-        setVlTotal((totMat + totServ).toFixed(2)) 
-        console.log(vlTotal)
+
+        setVlServTot(totServ.toFixed(2))
+
+        totGeral = (totMat + totServ)
+        setVlTotal(totGeral)
+        let total = convertPadrao(String(totGeral.toFixed(2)).replace('.',','))
+        setVlTotalBR(total)
     }
 
     async function InsertOrcamento() {
-        const insertOrcamento = await ExecuteQuery('INSERT INTO orcamentos (nOrcamento, cliente, embarcacao, vlTotal, data, prazoEntrega) VALUES (?, ?, ?, ?, ?, ?)', [nOrcamento, cliente, embarcacao, vlTotal, data, prazoEntrega])
+        
+        const insertOrcamento = await ExecuteQuery('INSERT INTO orcamentos (nOrcamento, cliente, embarcacao, vlTotal, data, prazoEntrega, vlMatTot, vlServTot) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [nOrcamento, cliente, embarcacao, vlTotal, data, prazoEntrega, vlMatTot, vlServTot])
  
         if(insertOrcamento.rowsAffected == 1) {
             for(let i = 0; i < listUtilmaterial.length; i++){
-                var matUtil = await ExecuteQuery('INSERT INTO matUtilizados (idOrcamento, idMaterial, qtdeMaterial, vlMaterial, prazoEntrega) VALUES (?, ?, ?, ?, ?)',[insertOrcamento.insertId, listUtilmaterial[i].id, listUtilmaterial[i].qtde, listUtilmaterial[i].valor], listUtilmaterial[i].prazo)
+                const valorMat = listUtilmaterial[i].valor.replace('.','').replace(',','.')
+                var matUtil = await ExecuteQuery('INSERT INTO matUtilizados (idOrcamento, idMaterial, qtdeMaterial, vlMaterial, prazoEntrega) VALUES (?, ?, ?, ?, ?)',[insertOrcamento.insertId, listUtilmaterial[i].id, listUtilmaterial[i].qtde, valorMat, listUtilmaterial[i].prazo])
               
                 if(matUtil.rowsAffected != 1) {
                     setErro(1)
@@ -148,7 +149,8 @@ export default () => {
             }
             if(erro == 0){
                 for(let x = 0; x < listUtilServico.length; x++) {
-                    var serv = await ExecuteQuery('INSERT INTO ServUtilizados (idOrcamento, descricao, qtdeServico, vlServico) VALUES (?, ?, ?, ?)',[insertOrcamento.insertId, listUtilServico[x].descricao, listUtilServico[x].qtde, listUtilServico[x].valor])
+                    const valorServ = listUtilServico[x].valor.replace('.','').replace(',','.')
+                    var serv = await ExecuteQuery('INSERT INTO ServUtilizados (idOrcamento, descricao, qtdeServico, vlServico) VALUES (?, ?, ?, ?)',[insertOrcamento.insertId, listUtilServico[x].descricao, listUtilServico[x].qtde, valorServ])
                 
                     if(serv.rowsAffected != 1) {
                         setErro(2)
@@ -169,7 +171,6 @@ export default () => {
             ToastAndroid.show('Erro ao salvar Orçamento!', ToastAndroid.LONG)
 
             if(finaly.rowsAffected == 0){
-
                 Alert.alert('ERRO FATAL', 'Ocorreu um erro fatal ao tentar o Orçamento')
                 console.log(finaly)
             }
@@ -177,6 +178,7 @@ export default () => {
     }
 
     function addMaterial() {
+        
         if(vlMaterial <= 0 || qtMaterial <= 0 || matSelected < 1) {
             Alert.alert('Informação', 'Todos os campos são obrigatórios!')
         }else {
@@ -214,6 +216,14 @@ export default () => {
             setListUtilServico([...listUtilServico,...servicoAll])
             setInsertServico(false)
             limparModais()
+        }
+    }
+
+    function convertPadrao(valor) {
+        if(valor.length <= 6) {
+            return `${valor.substring(0,valor.length -3)},${valor.substring(valor.length -2)}`
+        }else {
+            return `${valor.substring(0,valor.length -6)}.${valor.substring(valor.length -6,valor.length -3)},${valor.substring(valor.length -2)}`
         }
     }
 
@@ -262,7 +272,8 @@ export default () => {
                             keyboardType="numeric"
                             value={vlMaterial}
                             onChangeText={(masked, unmasked) => {
-                                setVlMaterial(masked.substr(3,masked.length))}
+                                setVlMaterial(masked.substring(3, masked.length))}
+                                // setVlMaterial(`${unmasked.substring(0,unmasked.length -2)}.${unmasked.substring(unmasked.length -2, unmasked.length )}`)}
                             }
                             mask = {Masks.BRL_CURRENCY}
                         />
@@ -324,7 +335,9 @@ export default () => {
                             keyboardType="numeric"
                             value={vlServico}
                             onChangeText={(masked, unmasked) => {
-                                setVlServico(masked.substr(3,masked.length))}}
+                                setVlServico(masked.substring(3,masked.length))}
+                                // setVlServico(`${unmasked.substring(0,unmasked.length -2)}.${unmasked.substring(unmasked.length -2, unmasked.length )}`)}
+                            }
                             mask = {Masks.BRL_CURRENCY}
                         />
                         <TouchableOpacity 
@@ -404,18 +417,16 @@ export default () => {
                             }}
                         />
                     </View>
-                    <View style={{maxHeight: 100, overflow: 'hidden', width: '95%'}}>
+                    <View style={{width: '95%'}}>
                         <ScrollView
                             showsVerticalScrollIndicator={false}
                         >
                         {listUtilmaterial?.map((item) => {
-                            let decimais = item.valor.substr(item.valor.length -2)
-                            let inteiros = item.valor.substr(0,item.valor.length -2)
                             return(
                                 <View key={item.id} style={estilos.itemMaterial}>
                                     <Text style={[estilos.txtItemMaterial, {width: '45%'}]}>{item.descricao} {item.modelo} {item.marca}</Text>
                                     <Text style={estilos.txtItemMaterial}>Qtde {item.qtde}</Text>
-                                    <Text style={estilos.txtItemMaterial}>Valor R$ {inteiros+','+decimais}</Text>
+                                    <Text style={estilos.txtItemMaterial}>Valor R$ {item.valor}</Text>
                                 </View>
                             )
                         })}
@@ -435,7 +446,7 @@ export default () => {
                             }}
                         />
                     </View>
-                    <View style={{maxHeight: 100, overflow: 'hidden', width: '95%'}}>
+                    <View style={{width: '95%'}}>
                         <ScrollView
                             showsVerticalScrollIndicator={false}
                         >
@@ -463,7 +474,7 @@ export default () => {
                     style={[estilos.containerTotal, {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}]}
                     onPress={calcTotal}
                 >
-                    <Text style={estilos.total}>TOTAL: R$ {vlTotal.replace('.',',')}</Text>
+                    <Text style={estilos.total}>TOTAL: R$ {vlTotalBR}</Text>
                     <Icon 
                         name="refresh" 
                         size={20} 
