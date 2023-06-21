@@ -64,17 +64,17 @@ export default () => {
       totalServ = totalServ += dadosPDF[i].vlTotalServ
       var totServ = convertPadrao(String(totalServ.toFixed(2)))
       
-      const valorServTot = convertPadrao(String(dadosPDF[i].vlTotalServ))
-      const valorServ = convertPadrao(String(dadosPDF[i].vlServico))
+      const valorServ = convertPadrao(String(dadosPDF[i].vlServico.toFixed(2)))
+      const valorServTot = convertPadrao(String((dadosPDF[i].vlTotalServ.toFixed(2))))
       servicos.push([dadosPDF[i].descServico, valorServ, dadosPDF[i].qtdeServico, valorServTot])
     }
- 
-    for(let i = 0; i < qtdes[0].totalMateriais + qtdes[0].totalServicos; i += qtdes[0].totalServicos){
+    for(let i = 0; i < qtdes[0].totalMateriais; i += qtdes[0].totalServicos){
+      
       totalMat = totalMat += dadosPDF[i].vlTotalMat
       var totMat = convertPadrao(String(totalMat.toFixed(2)))
       
-      const valorMatTot = convertPadrao(String((dadosPDF[i].vlTotalMat.toFixed(2))))
       const valorMat = convertPadrao(String(dadosPDF[i].vlMaterial))
+      const valorMatTot = convertPadrao(String((dadosPDF[i].vlTotalMat.toFixed(2)))) //OK
       materiais.push([dadosPDF[i].marcaMat, dadosPDF[i].material, dadosPDF[i].modeloMat, valorMatTot, dadosPDF[i].qtdeMaterial, valorMat, dadosPDF[i].prazoMat])
     }
 
@@ -235,7 +235,7 @@ export default () => {
                ${materiais.map( (lines, index) => `
                <tr>
                  <td class="item" style="width: 50px">${index + 1}</td>
-                 <td class="item">${lines[0]} - ${lines[1]} - ${lines[2]}</td>
+                 <td class="item">${lines[1]} - ${lines[0]} - ${lines[2]}</td>
                  <td class="item" style="width: 50px">${lines[4]}</td>
                  <td class="item" style="width: 100px">${lines[5]}</td>
                  <td class="item" style="width: 100px">${lines[3]}</td>
@@ -293,7 +293,7 @@ export default () => {
        </html>
        `
     setLoading(true)
-    setCreatePDF(0)
+    // setCreatePDF(0)
     try{
       const options = {
         html,
@@ -331,6 +331,7 @@ export default () => {
         Alert.alert('ERRO', 'O APP não pode gerar o PDF por falta de permissão')
       }
     }
+    setCreatePDF(0)
   }
 
   if(pdfView){
@@ -356,7 +357,7 @@ export default () => {
           source={source}
           onLoadComplete={(number, path) => {
             setNPages(number)
-            console.log(`paginas ${number}`)
+            // console.log(`paginas ${number}`)
           }}
           onError={(error) => {
             console.log(error)
