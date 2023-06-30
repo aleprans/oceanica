@@ -59,6 +59,7 @@ export default () => {
         +" contato TEXT, "
         +" email TEXT,"
         +" pix TEXT,"
+        +" formPag TEXT,"
         +" agencia TEXT,"
         +" conta TEXT,"
         +" norcamento TEXT,"
@@ -106,7 +107,7 @@ export default () => {
     }
 
     function screenGerar() {
-        navigation.navigate('ListOrcamentos')
+        navigation.navigate('ListOrcamentos', {id: 0})
     }
     
     function screenGerenciar() {

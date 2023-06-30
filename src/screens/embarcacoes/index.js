@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Text, ToastAndroid, TextInput, TouchableOpacity, KeyboardAvoidingView, ScrollView, View } from 'react-native';
 
-import Icon from 'react-native-vector-icons/FontAwesome';
 import ExecuteQuery from '../../sql';
 import estilos from './style';
 import Select from '../../components/select';

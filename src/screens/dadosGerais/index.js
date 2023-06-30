@@ -23,6 +23,7 @@ export default () => {
     const [conta, setConta] = useState('')
     const [dadosPix, setDadosPix] = useState('')
     const [norcamento, setN_orcamento] = useState('')
+    const [formPag, setFormPag] = useState('')
 
     async function selectDados() {
         const result = await ExecuteQuery('SELECT * from dadosGerais')
@@ -36,6 +37,7 @@ export default () => {
             setConta(result.rows.item(0).conta)
             setDadosPix(result.rows.item(0).pix)
             setN_orcamento(result.rows.item(0).norcamento)
+            setFormPag(result.rows.item(0).formPag)
         }
     }
 
@@ -48,6 +50,7 @@ export default () => {
         setDadosPix('')
         setN_orcamento('')
         setEmail('')
+        setFormPag('')
     }
 
     function salvar() {
@@ -56,7 +59,7 @@ export default () => {
     }
 
     function verification() {
-        if(endereco == null || contato == null || banco == null || agencia == null || conta == null || dadosPix == null || email == null || endereco.length < 1 || contato.length < 1 || banco.length < 1 || agencia < 1 || conta < 1 || dadosPix.length < 1 || email.length < 1) {
+        if(endereco == null || contato == null || banco == null || agencia == null || conta == null || dadosPix == null || email == null || endereco.length < 1 || contato.length < 1 || formPag == null || banco.length < 1 || agencia < 1 || conta < 1 || dadosPix.length < 1 || email.length < 1) {
             Alert.alert('Atenção', 'Todos os dados são obrigatórios')
         }else {
             salvar()
@@ -65,7 +68,7 @@ export default () => {
 
     async function UpdateDados() {
         const result = await ExecuteQuery(
-            'UPDATE dadosGerais SET endereco = ?, contato = ?, banco = ? , agencia = ?, conta = ?, pix = ?, norcamento = ?, email = ? WHERE id = ?', [endereco, contato, banco, agencia, conta, dadosPix, norcamento, email, nid])
+            'UPDATE dadosGerais SET endereco = ?, contato = ?,formpag = ?, banco = ? , agencia = ?, conta = ?, pix = ?, norcamento = ?, email = ? WHERE id = ?', [endereco, contato, formPag, banco, agencia, conta, dadosPix, norcamento, email, nid])
         if(result.rowsAffected == 1){
             ToastAndroid.show('Dados salvos com sucesso!', ToastAndroid.LONG)
             Limpar()
@@ -106,6 +109,14 @@ export default () => {
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize='none'
+            />
+            
+            <Text style={estilos.label}>Form. pagamento</Text>
+            <TextInput 
+                style={estilos.input}
+                placeholder='ex: peças por pix restante por deposito bancário'
+                value={formPag}
+                onChangeText={setFormPag}
             />
            
             <Text style={estilos.label}>Dados Bancários</Text>

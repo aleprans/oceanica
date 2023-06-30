@@ -8,7 +8,8 @@ import {
     ScrollView, 
     View, 
     Modal,
-    Alert
+    Alert,
+    Keyboard
 } from 'react-native';
 import MaskInput, { Masks } from 'react-native-mask-input';
 
@@ -61,6 +62,12 @@ export default () => {
         calcTotal()
     },[qtMaterial, vlMaterial, qtServico, vlServico])
 
+    useEffect(() => {
+        if(data.length >= 10) {
+            Keyboard.dismiss()
+        }
+    },[data])
+
     async function selectCliente() {
         setListCliente([])
         let selectQuery = await ExecuteQuery('SELECT * from clientes')
@@ -106,11 +113,6 @@ export default () => {
         setPrazoEntMat('')
     }
 
-    function salvar() {
-        InsertOrcamento()
-        navigation.goBack()
-    }
-
     function calcTotal() {
 
         let totMat = 0
@@ -133,11 +135,11 @@ export default () => {
         let total = convertPadrao(String(totGeral.toFixed(2)).replace('.',','))
         setVlTotalBR(total)
     }
-
+    
     async function InsertOrcamento() {
         
         const insertOrcamento = await ExecuteQuery('INSERT INTO orcamentos (nOrcamento, cliente, embarcacao, vlTotal, data, prazoEntrega, vlMatTot, vlServTot) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [nOrcamento, cliente, embarcacao, vlTotal, data, prazoEntrega, vlMatTot, vlServTot])
- 
+
         if(insertOrcamento.rowsAffected == 1) {
             for(let i = 0; i < listUtilmaterial.length; i++){
                 const valorMat = listUtilmaterial[i].valor.replace('.','').replace(',','.')
@@ -151,7 +153,7 @@ export default () => {
                 for(let x = 0; x < listUtilServico.length; x++) {
                     const valorServ = listUtilServico[x].valor.replace('.','').replace(',','.')
                     var serv = await ExecuteQuery('INSERT INTO ServUtilizados (idOrcamento, descricao, qtdeServico, vlServico) VALUES (?, ?, ?, ?)',[insertOrcamento.insertId, listUtilServico[x].descricao, listUtilServico[x].qtde, valorServ])
-                
+                    
                     if(serv.rowsAffected != 1) {
                         setErro(2)
                     }
@@ -165,16 +167,21 @@ export default () => {
                     }
                 }
             }
+            
         }
         if(erro != 0) {
             const finaly = await ExecuteQuery('DELETE FROM ServUtilizados WHERE idOrcamento = ?; DELETE FROM matUtilizados WHERE idOrcamento = ?; DELETE FROM orcamentos WHERE id = ?', [insertOrcamento, insertOrcamento, insertOrcamento])
             ToastAndroid.show('Erro ao salvar Orçamento!', ToastAndroid.LONG)
 
             if(finaly.rowsAffected == 0){
-                Alert.alert('ERRO FATAL', 'Ocorreu um erro fatal ao tentar o Orçamento')
-                console.log(finaly)
+                Alert.alert('ERRO FATAL', 'Ocorreu um erro fatal ao tentar salvar o Orçamento')
             }
         }
+    }
+    
+    async function salvar() {
+        await InsertOrcamento()
+        navigation.goBack()
     }
 
     function addMaterial() {
